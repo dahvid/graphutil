@@ -8,13 +8,15 @@
 #--David Minor, June 11, 2009
 #--Version 1.4.0
 #--David Minor, Anatoly Ganapolski, September 27, 2012
+#--Version 1.5.0
+#--David Minor  January 14, 2016
 
-has_netx = True
+has_graphviz = True
 try:
-	import networkx as nx
+	import pygraphviz as pgv
 except:
 	#print "WARNING module networkx was not found, graphs will not be created in displayable (.gml) format."
-	has_netx = False
+	has_graphviz = False
 
 import copy
 import pprint
@@ -216,113 +218,91 @@ class Graph:
 		self.closure={}
 		self.dfs_list={}
 
+	def clear(self):
+		self.__init__()
+
 	def set(self, name, value):
 		self.graph_attributes[name] = value
+		
+	def get(self, name):
+		return self.graph_attributes[name]
+		
+
+	def attr_dict(self):
+		return self.graph_attributes
 
 
 	#--Transforms the graph into it's transative reduction
 	#--as the original, can be used to eliminate redundent dependencies
 	#--transative reduction is the minumum graph with the same transative closure as
 	#--the original
+	#--currently only works with DAG's
 	def transitive_reduction(self):
-		print 'reducing graph'
-		t0 = time.time()
+		#print 'reducing graph'
+		#t0 = time.time()
 		self.transitive_closure()
-		print 'reducing over ',len(self.edge_list()),'edges', len(self.node_list()), 'nodes'
+		#print 'reducing over ',len(self.edge_list()),'edges', len(self.node_list()), 'nodes'
 
 		for n in self.node_list():
 			inputs = self.in_arcs(n)
 			if len(inputs) > 1:
 				for e in inputs:
+					if self.head(e) == self.tail(e):
+						continue
 					paths = self.paths(self.head(e),n)
 					if paths > 1:
 						self.delete_edge(e)
-		print 'done reducing', len(self.edge_list()), 'edges in', time.time() - t0, 'seconds'
+		#print 'done reducing', len(self.edge_list()), 'edges in', time.time() - t0, 'seconds'
 
 	#idea is to write a .gml file for reading with a graph editor
 	#and executable python file for further manipulation and reading
 	#with our run-time
-	#!!!there is non-generic stuff here, get rid of it, put it in algcl.py
+	#!!!there is non-generic stuff here, get rid of it
 	def write(self, name):
+
+			
 		#no edges is allowed (one node)
 		#but no nodes is a no no
 		if len(self.node_list()) == 0:
 			raise BaseException('ERROR GRAPH EMPTY NO NODES')
-		if has_netx:
-			write_graph = nx.DiGraph()
 
-		#write nodes in topological order
-		topo_list = self.topological_sort()
-		py_node_list = []
-		for node in topo_list:
-			py_node_list += self.node_data(node)
-			if has_netx:
-				write_graph.add_node(node)
-				format = self.node_data(node)[0]
-				# print 'node data=', format
-				write_graph.node[node]['data'] = str([(format[0], format[1], format[2], eval(format[3]))])
-
-		py_edge_list = []
-		adjuncts = defaultdict(list)
-		prejuncts = defaultdict(list)
-		for edge in self.edge_list():
-			head_index = topo_list.index(self.head(edge))
-			tail_index = topo_list.index(self.tail(edge))
-			py_edge_list += [(head_index, tail_index)]
-			adjuncts[head_index].append(tail_index)
-			prejuncts[tail_index].append(head_index)
-
-			if has_netx:
-				write_graph.add_edge(self.head(edge), self.tail(edge))
-
-		#make into sorted list, with indices removed
-		#for key,value in prejuncts.iteritems():
-			#adjuncts.update({key : value + adjuncts[key]})
-
-		#save into graph struct for writing
-		self.set('adjuncts',adjuncts.values())
-		self.set('prejuncts',prejuncts.values())
-
-		#it's not exactly leaves and roots it's more like input kernels and output kernels
-		#because a kernel in the middle can also be connected with an output and must be synchronized
-		#we need to know which i/o buffers are connected with which nodes in the graph
-		#roots must be connected with at least one input
-		#leaves must be connected to at least one output
-		#but nodes in the middle can also be connected to inputs or outputs
-		#we need to create a { input_node : [buffer] } and { output_node : [buffer] } map
-
-		#for i in range(len(self.node_list)):
-
-		roots = [topo_list.index(x) for x in self.roots()]
-		leaves = [topo_list.index(x) for x in self.leaves()]
-		self.set('roots',roots)
-		self.set('leaves',leaves)
-		#self.set('leaves',leaves)
-
-		py_attr_dict = {}
-		if has_netx:
-			for attr in self.graph_attributes:
-				write_graph.graph[attr] = str(self.graph_attributes[attr])
-
-		py_attr_dict.update(self.graph_attributes)
-
+		#this will write the graph as a graph_viz .dot file
+		if has_graphviz:
+			#self.transitive_reduction()
+			write_graph = pgv.AGraph(directed=True)
+			for o in self.node_list():
+				write_graph.add_node(o)
+			for e in self.edge_list():
+				write_graph.add_edge(self.head(e), self.tail(e))
+			write_graph.write(name + '.dot')
+		
+		#this will write the graph as a python compilable file
+		# Graph = {
+		# 	'nodes' : { node id : (node data) }
+		# 	'edges' : { (src node id, dest node id) : (edge data) }
+		#   'attributes' : { attribute : value }
+		# }		 
 
 		#pure python representation
-		py_graph = { 'nodes' : py_node_list, 'edges' : py_edge_list, 'attributes' : py_attr_dict }
-		f = open(name+'_icl.py', 'w')
+		py_graph = { 'nodes' : self.node_dict(), 'edges' : self.edge_dict(), 'attributes' : self.attr_dict() }
+		f = open(name+'_graph.py', 'w')
 		pretty_printer = pprint.PrettyPrinter(indent=4)
 		nice_str = pretty_printer.pformat(py_graph)
-		f.write('graph = ' + nice_str)
-		if has_netx:
-			nx.write_gml(write_graph, name+'.gml')
-
+		f.write('GraphDict = ' + nice_str)
+		
 
 	#pure Warshals algorithm, but adapted to existing data structures
 	def transitive_closure(self):
 		print 'computing closure'
 		t0 = time.time()
 		new_edges = set()
-		edge_set = frozenset([(self.head(e),self.tail(e)) for e in self.edges])
+		edge_list = []
+		for e in self.edges:
+			head = self.head(e)
+			tail = self.tail(e)
+			if e in self.edges and head != tail:
+				edge_list += [(head,tail)] 
+		edge_set = frozenset(edge_list)
 		for edge in edge_set:
 			for i in self.nodes:
 				if not i in edge:
@@ -512,6 +492,7 @@ class Graph:
 		nl=self.nodes.keys()
 		return nl[:]
 
+
 	#--Return a list of leaf nodes
 	def leaves(self):
 		leaf_list = []
@@ -534,6 +515,10 @@ class Graph:
 	def edge_data_list(self):
 		el=self.edges.keys()
 		return [self.edge_data(id) for id in el[:]]
+
+	def edge_dict(self):
+		return { (self.head(id), self.tail(id)) : self.edge_data(id) for id in self.edges.keys() }
+
 
 	def number_of_hidden_edges(self):
 		return len(self.hidden_edges.keys())
@@ -698,7 +683,7 @@ class Graph:
 					topological_queue.add(tail)
 		#--Check to see if all nodes were covered.
 		if len(topological_list)!=len(node_list):
-			#print "WARNING: Graph appears to be cyclic. Topological sort is invalid!"
+			print "WARNING: Graph appears to be cyclic. Topological sort is invalid!"
 			raise Graph_topological_error, topological_list
 
 		self.topo_sort = topological_list
@@ -791,14 +776,13 @@ class Graph:
 		for (key,value) in self.graph_attributes.items():
 			s.append("'" + key + "' : " + self.stringify(value) + ',\n\t')
 
-		#s.append("'nodes' : " + str([self.node_data(x) for x in self.node_list()]) + ',\n\t')
 		s.append("'nodes' : " + str(self.node_dict()) + ',\n\t')
 		s.append("'edges' : " + str([(self.head(x), self.tail(x)) for x in self.edge_list()]) + '\n')
 
 		s.append('}')
 		return "".join(s)
 
-
+		
 	#--Returns the number of paths between two nodes.
 
 	def paths(self, from_node, to_node):
