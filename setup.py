@@ -14,7 +14,7 @@ setup(name='graphutil',
       description='Graph Processing Library',
       author='David Minor',
       author_email='dahvid.minor@gmail.com',
-      url='https://www.python.org/sigs/distutils-sig/',
+      url='https://github.com/dahvid/graphlib',
       packages=['graphutil'],
       python_requires='>=2.7',
       )
