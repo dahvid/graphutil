@@ -9,12 +9,12 @@ https://github.com/pypa/sampleproject
 # Always prefer setuptools over distutils
 from setuptools import setup
 
-setup(name='graphlib',
+setup(name='graphutil',
       version='1.2',
       description='Graph Processing Library',
       author='David Minor',
       author_email='dahvid.minor@gmail.com',
       url='https://www.python.org/sigs/distutils-sig/',
-      packages=['graphlib'],
+      packages=['graphutil'],
       python_requires='>=2.7',
       )
