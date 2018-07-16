@@ -1,1 +1,1 @@
-from graphutil import *
+from .graphutil import *
