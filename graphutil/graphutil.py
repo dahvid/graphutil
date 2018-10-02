@@ -16,7 +16,7 @@
 #--Version 1.5.0
 #--David Minor  January 14, 2016
 #--Version 1.6.0
-#--David Minor April 9, 2018
+#--David Minor April 9, 2018  -from here on check git hub
 
 has_graphviz = True
 try:
@@ -392,10 +392,6 @@ class Graph:
 		self.edges[edge_id]=(head_id, tail_id, edge_data)
 		self.nodes[head_id][1].append(edge_id)
 		self.nodes[tail_id][0].append(edge_id)
-		#mapped_head_data=map(None, self.nodes[head_id])
-		#mapped_head_data[1].append(edge_id)
-		#mapped_tail_data=map(None, self.nodes[tail_id])
-		#mapped_tail_data[0].append(edge_id)
 		return edge_id
 
 	#--Removes the edge from the normal graph, but does not delete
@@ -574,12 +570,13 @@ class Graph:
 
 	#--Returns a copy of the list of edges of the node's out arcs.
 	def out_arcs(self, node_id):
+		if node_id not in self.nodes.keys():
+			return []
 		return self.nodes[node_id][1]
 
 	#--Returns a copy of the list of edge data of the node's out arcs.
 	def out_arcs_data(self, node_id):
-		mapped_data=map(None, self.nodes[node_id])
-		return [self.edge_data(edge_id) for edge_id in mapped_data[1][:]]
+		return [self.edge_data(edge_id) for edge_id in self.out_arcs(node_id)]
 
 	#--Similar to above.
 	def in_arcs(self, node_id):
@@ -605,8 +602,6 @@ class Graph:
 
 	#--Similar to above.
 	def in_arcs_data(self, node_id):
-		#mapped_data=map(None, self.nodes[node_id])
-		#return [self.edge_data(edge_id) for edge_id in mapped_data[0][:]]
 		return [self.edge_data(edge_id) for edge_id in self.in_arcs(node_id)]
 
 	#--Returns a list of in and out arcs.
