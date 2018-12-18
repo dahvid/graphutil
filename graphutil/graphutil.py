@@ -243,6 +243,7 @@ class Graph:
     def attr_dict(self):
         return self.graph_attributes
 
+    #TODO this should use a dfs for effeciency, instead of duplicating edges
     def induce(self, tasks):
         """
             creates an induced graph from the passed in set of tasks
@@ -252,6 +253,7 @@ class Graph:
         for task in tasks:
             g.add_node(task, self.node_data(task))
 
+        edges = set()
         for task in tasks:
             in_arcs = self.in_arcs_data(task)
             out_arcs = self.out_arcs_data(task)
@@ -260,16 +262,17 @@ class Graph:
             dangling_out_edges = []
             for head,tail,data in in_arcs:
                 if head in tasks and tail in tasks:
-                    g.add_edge(head,tail,data)
+                    edges.add((head,tail,data))
                 else:
                     dangling_in_edges += [(head,tail,data)]
 
             for head,tail,data in out_arcs:
                 if head in tasks and tail in tasks:
-                    g.add_edge(head,tail,data)
+                    edges.add((head,tail,data))
                 else:
                     dangling_out_edges += [(head,tail,data)]
-
+        for head,tail,data in edges:
+                g.add_edge(head,tail,data)
         return (g, dangling_in_edges, dangling_out_edges)
 
 
