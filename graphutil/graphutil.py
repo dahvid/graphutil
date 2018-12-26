@@ -298,7 +298,7 @@ class Graph:
                     if paths > 1:
                         self.delete_edge(e)
 
-    def write(self, name):
+    def write(self, name, head_edge_form=None, tail_edge_form=None):
         # no edges is allowed (one node)
         # but no nodes is a no no
         if len(self.node_list()) == 0:
@@ -311,8 +311,14 @@ class Graph:
             for o in self.node_list():
                 write_graph.node(o)
             for e in self.edge_list():
-                write_graph.edge(self.head(e), self.tail(e), label=str(self.edge_data(e)))
-            write_graph.render(format='png', filename=name)
+                if head_edge_form and tail_edge_form:
+                    label = head_edge_form(self.edge_data(e)) + '->' + tail_edge_form(self.edge_data(e))
+                    write_graph.edge(self.head(e), self.tail(e)
+                                     , label=label)
+
+                else:
+                    write_graph.edge(self.head(e), self.tail(e), label=str(self.edge_data(e)))
+            write_graph.render(filename= name)
 
         # pure python representation
         py_graph = {'nodes': self.node_dict(), 'edges': self.edge_dict(), 'attributes': self.attr_dict()}
