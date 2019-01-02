@@ -2,6 +2,6 @@
 A small python graph library
 
 Meant to be single file, no dependencies
-If you have networkx you can print graphs to .gml file format
+If you have graphviz you can print graphs to pdf
 If not it will still work
 
