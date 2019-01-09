@@ -230,6 +230,8 @@ class Graph:
         self.closure = {}
         self.dfs_list = {}
         self.sub_graphs = {}
+        #set if previous topo sort has been invalidated by adding/deleting edges
+        self.topo_dirty = False
 
     def clear(self):
         self.__init__()
@@ -411,7 +413,7 @@ class Graph:
             self.delete_node(node)
 
 
-    # --Delets the edge.
+    # --Deletes the edge.
     def delete_edge(self, edge_id):
         head_id = self.head(edge_id)
         tail_id = self.tail(edge_id)
@@ -420,6 +422,7 @@ class Graph:
         head_data[1].remove(edge_id)
         tail_data[0].remove(edge_id)
         del self.edges[edge_id]
+        self.topo_dirty = True
 
 
     # --Adds an edge (head_id, tail_id).
@@ -435,6 +438,7 @@ class Graph:
         self.edges[edge_id] = (head_id, tail_id, edge_data)
         self.nodes[head_id][1].append(edge_id)
         self.nodes[tail_id][0].append(edge_id)
+        self.topo_dirty = True
         return edge_id
 
 
@@ -741,8 +745,10 @@ class Graph:
     # --If the graph has a cycle, the Graph_topological_error is thrown with the
     # --list of successfully ordered nodes.
     def topological_sort(self):
-        if len(self.topo_sort) > 0:
+        if len(self.topo_sort) > 0 and not self.topo_dirty:
             return self.topo_sort
+
+        self.topo_dirty = False
 
         topological_list = []
         topological_queue = GraphQueue()
