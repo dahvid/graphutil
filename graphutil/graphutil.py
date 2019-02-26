@@ -48,6 +48,10 @@ class Graph_dandling_edge(Exception):
     pass
 
 
+class Graph_duplicate_edge(Exception):
+    pass
+
+
 """
 
 	Tarjan's algorithm and topological sorting implementation in Python
@@ -419,8 +423,11 @@ class Graph:
         tail_id = self.tail(edge_id)
         head_data = self.nodes[head_id]
         tail_data = self.nodes[tail_id]
-        head_data[1].remove(edge_id)
-        tail_data[0].remove(edge_id)
+        try:
+            head_data[1].remove(edge_id)
+            tail_data[0].remove(edge_id)
+        except Exception as e:
+            print('gotchya',e)
         del self.edges[edge_id]
         self.topo_dirty = True
 
@@ -431,7 +438,15 @@ class Graph:
         if (head_id not in self.nodes.keys()) or (tail_id not in self.nodes.keys()):
             nodes_ids_str = '"' + str(head_id) + '" & "' + str(tail_id) + '"'
             raise Graph_dandling_edge(
-                "you can't add edge connecting " + nodes_ids_str + " before adding nodes: " + nodes_ids_str)
+                "You can't add edge connecting " + nodes_ids_str + " before adding nodes: " + nodes_ids_str)
+
+        existing_edges = self.get_edges(head_id, tail_id)
+        for edge in existing_edges:
+            if self.edge_data(edge) == edge_data: #duplicate edge
+                raise Graph_duplicate_edge(
+                    "You can't add identical edge from " + head_id + " to " + tail_id
+                    + " with identical data " + edge_data
+                )
 
         edge_id = self.next_edge_id
         self.next_edge_id = self.next_edge_id + 1
@@ -532,12 +547,23 @@ class Graph:
 
 
     # --Returns the edge that connects (head_id,tail_id)
+    # --Depracated - we now support multi-graphs, providing edges have unique data attached
     def edge(self, head_id, tail_id):
         out_edges = self.out_arcs(head_id)
         for edge in out_edges:
             if self.tail(edge) == tail_id:
                 return edge
         raise (Graph_no_edge, (head_id, tail_id))
+
+
+    # --Returns the edge that connects (head_id,tail_id)
+    def get_edges(self, head_id, tail_id):
+        out_edges = self.out_arcs(head_id)
+        edges = []
+        for edge in out_edges:
+            if self.tail(edge) == tail_id:
+                edges += [edge]
+        return edges
 
 
     # print "WARNING: No edge to return."
@@ -556,7 +582,7 @@ class Graph:
 
     # --Return a list of the node id's of all visible nodes in the graph.
     def node_list(self):
-        return self.nodes.keys()
+        return list(self.nodes.keys())
 
 
     # --Return a list of leaf nodes
