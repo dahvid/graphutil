@@ -19,6 +19,6 @@ pycparser==2.19
 Pygments==2.2.0
 pytest==3.9.3
 readme-renderer==22.0
-rsa==3.4.2
+rsa==4.1
 six==1.11.0
 twine==1.12.1
