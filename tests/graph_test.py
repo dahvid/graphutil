@@ -98,8 +98,44 @@ def test_connected_components():
             assert False
     assert True
 
+def test_bfs():
+    g = Graph()
+    g.add_node("A")
+    g.add_node("B")
+    g.add_node("C")
+    g.add_node("D")
+    g.add_node("E")
+    g.add_node("F")
+
+    g.add_edge("A", "B", "edge_data")
+    g.add_edge("B", "C", "edge_data")
+    g.add_edge("C", "D", "edge_data")
+    g.add_edge("B", "D", "edge_data")
+    bfs = g.bfs("A")
+    # print(bfs)
+    assert bfs == ["A","B","C","D"]
+
+def test_bfs_full():
+    g = Graph()
+    g.add_node("A")
+    g.add_node("B")
+    g.add_node("C")
+    g.add_node("D")
+    g.add_node("E")
+    g.add_node("F")
+
+    g.add_edge("A", "B", "edge_data")
+    g.add_edge("A", "D", "edge_data")
+    g.add_edge("B", "C", "edge_data")
+    g.add_edge("B", "D", "edge_data")
+    bfs = g.bfs_full()
+    assert len(bfs)
+    # print(bfs)
+    assert bfs == ["A","B","D","C","E","F"]
 
 if __name__ == "__main__":
     test_arcs()
     test_write()
     test_connected_components()
+    test_bfs()
+    test_bfs_full()

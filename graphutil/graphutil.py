@@ -531,7 +531,7 @@ class Graph:
 
     # --Returns 1 if the node_id is in the graph and 0 otherwise.
     def has_node(self, node_id):
-        if self.nodes.has_key(node_id):
+        if node_id in self.nodes:
             return 1
         else:
             return 0
@@ -887,7 +887,7 @@ class Graph:
                         pass
 
             for edge in out_edges:
-                if repeat or not nodes_already_stacked.has_key(self.tail(edge)):
+                if repeat or not self.tail(edge) in nodes_already_stacked:
                     nodes_already_stacked[self.tail(edge)] = 0
                     dfs_stack.push(self.tail(edge))
         return dfs_list
@@ -960,11 +960,21 @@ class Graph:
                         pass
 
             for edge in in_edges:
-                if not nodes_already_stacked.has_key(self.head(edge)):
+                if not self.head(edge) in nodes_already_stacked:
                     nodes_already_stacked[self.head(edge)] = 0
                     dfs_stack.push(self.head(edge))
         return dfs_list
 
+    # --Returns a list of nodes in some BFS order for all nodes in graph
+    def bfs_full(self):
+        roots = self.roots()
+        bfs_order = []
+        bfs_set   = set()
+        for root in roots:
+            bfs = self.bfs(root)
+            bfs_order += [n for n in bfs if not n in bfs_set]
+            bfs_set.union(set(bfs))
+        return bfs_order
 
     # --Returns a list of nodes in some BFS order.
     def bfs(self, source_id):
@@ -979,7 +989,7 @@ class Graph:
             bfs_list.append(current_node)
             out_edges = self.out_arcs(current_node)
             for edge in out_edges:
-                if not nodes_already_queued.has_key(self.tail(edge)):
+                if not self.tail(edge) in nodes_already_queued:
                     nodes_already_queued[self.tail(edge)] = 0
                     bfs_queue.add(self.tail(edge))
         return bfs_list
@@ -999,7 +1009,7 @@ class Graph:
             bfs_list.append(current_node)
             in_edges = self.in_arcs(current_node)
             for edge in in_edges:
-                if not nodes_already_queued.has_key(self.head(edge)):
+                if not self.head(edge) in nodes_already_queued:
                     nodes_already_queued[self.head(edge)] = 0
                     bfs_queue.add(self.head(edge))
         return bfs_list
@@ -1077,7 +1087,7 @@ class Graph:
                     continue  # no need to continue search
 
                 dfs_stack.top()[1] = True  # set children stacked + edge processed
-                if nodes_already_stacked.has_key(node_id) and not repeat:  # if node already visited
+                if node_id in nodes_already_stacked and not repeat:  # if node already visited
                     continue
 
                 nodes_already_stacked[node_id] = 0
@@ -1090,7 +1100,7 @@ class Graph:
 
                 for edge_id in out_edges:
                     node_id = self.tail(edge_id)
-                    if repeat or not nodes_already_stacked.has_key(node_id):
+                    if repeat or not nodi_id in nodes_already_stacked:
                         nodes_already_stacked[node_id] = 0
                         dfs_stack.push([edge_id, False])  # False - means Children not stacked, edge not processed
 
