@@ -976,6 +976,16 @@ class Graph:
             bfs_set.union(set(bfs))
         return bfs_order
 
+    # --Returns a list of nodes in some BFS order for all given roots
+    def bfs_multi(self, roots):
+        bfs_order = []
+        bfs_set   = set()
+        for root in roots:
+            bfs = self.bfs(root)
+            bfs_order += [n for n in bfs if not n in bfs_set]
+            bfs_set.union(set(bfs))
+        return bfs_order
+
     # --Returns a list of nodes in some BFS order.
     def bfs(self, source_id):
         nodes_already_queued = {source_id: 0}
