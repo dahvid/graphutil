@@ -133,9 +133,28 @@ def test_bfs_full():
     # print(bfs)
     assert bfs == ["A","B","D","C","E","F"]
 
+def test_substitute():
+    g = Graph()
+    g.add_node("A")
+    g.add_node("B")
+    g.add_node("C")
+
+    g.add_edge("A", "B", "a-b data")
+    g.add_edge("B", "C", "b-c data")
+
+    s = Graph()
+    s.add_node("B")
+    s.add_node("D")
+    s.add_edge("B","D","b-d data")
+
+    g.substitute("B",s)
+    assert len(g.node_list()) == 4
+    assert set(g.node_list()) == {'A','B','C','D'}
+
 if __name__ == "__main__":
     test_arcs()
     test_write()
     test_connected_components()
     test_bfs()
     test_bfs_full()
+    test_substitute()

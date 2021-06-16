@@ -249,6 +249,29 @@ class Graph:
     def attr_dict(self):
         return self.graph_attributes
 
+    #inserts a graph in place of a node
+    #assumes input and output arcs are connected to root/leaf of the graph
+    #assumes only deleted node has the same name in substituted node
+    #assumes substituting graph has one root and one leaf
+    #preserves all in/out arc attributes/id's
+    #TODO make this more general, less restrictions
+    def substitute(self, node, g):
+        in_arcs = [(self.head(x),self.tail(x),self.edge_data(x)) for x in self.in_arcs(node)]
+        out_arcs = [(self.head(x),self.tail(x),self.edge_data(x)) for x in self.out_arcs(node)]
+        self.delete_node(node)
+        for node in g.node_list():
+            self.add_node(node)
+        for edge in g.edge_list():
+            self.add_edge(g.head(edge),g.tail(edge),g.edge_data(edge))
+        for a in in_arcs:
+            self.add_edge(a[0],a[1],a[2])
+        leaf = g.leaves()[0]
+        for o in out_arcs:
+            self.add_edge(leaf,o[1],o[2])
+
+
+
+
     #TODO this should use a dfs for effeciency, instead of duplicating edges
     def induce(self, tasks):
         """
