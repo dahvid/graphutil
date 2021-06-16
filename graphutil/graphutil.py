@@ -986,6 +986,12 @@ class Graph:
             bfs_set.union(set(bfs))
         return bfs_order
 
+    # --Visits all nodes from roots in BFS order, including roots
+    def bfs_multi_visit(self,roots,visitor):
+        bfs_order = self.bfs_multi(roots)
+        for node in bfs_order:
+            visitor.discover_node(node)
+
     # --Returns a list of nodes in some BFS order.
     def bfs(self, source_id):
         nodes_already_queued = {source_id: 0}
@@ -1047,7 +1053,7 @@ class Graph:
 
     # --Returns all the root nodes of the graph
     def roots(self):
-        return [x for x in self.node_list() if len(self.in_arcs(x)) == 0]
+        return [x for x in self.nodes if len(self.in_arcs(x)) == 0]
 
 
     class DummyVisitor:
