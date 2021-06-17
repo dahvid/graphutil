@@ -260,9 +260,9 @@ class Graph:
         out_arcs = [(self.head(x),self.tail(x),self.edge_data(x)) for x in self.out_arcs(node)]
         self.delete_node(node)
         for node in g.node_list():
-            self.add_node(node)
+            self.add_node(node, g.node_data(node))
         for edge in g.edge_list():
-            self.add_edge(g.head(edge),g.tail(edge),g.edge_data(edge))
+            self.add_edge(g.head(edge),g.tail(edge),g.edge_data(edge)[2])
         for a in in_arcs:
             self.add_edge(a[0],a[1],a[2])
         leaf = g.leaves()[0]
