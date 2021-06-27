@@ -868,8 +868,7 @@ class Graph:
         return visited
 
     def connected_components(self):
-
-        all_nodes = set(self.node_list())
+        all_nodes = set(self.nodes.keys())
         groups = []
         while all_nodes:
             group = self.undirected_bfs(all_nodes.pop())
