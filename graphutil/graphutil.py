@@ -221,7 +221,8 @@ class GraphStack:
 
 class Graph:
 
-    def __init__(self):
+    def __init__(self,label=None):
+        self.label = label
         self.next_edge_id = 0
         self.nodes = {}
         self.edges = {}
@@ -249,6 +250,9 @@ class Graph:
     def attr_dict(self):
         return self.graph_attributes
 
+    def get_label(self):
+        return self.label
+
     #inserts a graph in place of a node
     #assumes input and output arcs are connected to root/leaf of the graph
     #assumes only deleted node has the same name in substituted node
@@ -273,12 +277,12 @@ class Graph:
 
 
     #TODO this should use a dfs for effeciency, instead of duplicating edges
-    def induce(self, tasks):
+    def induce(self, tasks, label=None):
         """
             creates an induced graph from the passed in set of tasks
             :return  graph, dangling out edges, dangling in edges
         """
-        g = Graph()
+        g = Graph(label)
         for task in tasks:
             g.add_node(task, self.node_data(task))
 
@@ -1000,12 +1004,12 @@ class Graph:
 
     # --Returns a list of nodes in some BFS order for all given roots
     def bfs_multi(self, roots):
-        bfs_order = []
-        bfs_set   = set()
+        bfs_order = roots
+        bfs_set   = set(roots)
         for root in roots:
             bfs = self.bfs(root)
-            bfs_order += [n for n in bfs if not n in bfs_set]
-            bfs_set.union(set(bfs))
+            bfs_order += [n for n in bfs if n not in bfs_set]
+            bfs_set = bfs_set.union(set(bfs))
         return bfs_order
 
     # --Visits all nodes from roots in BFS order, including roots
