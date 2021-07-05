@@ -221,7 +221,7 @@ class GraphStack:
 
 class Graph:
 
-    def __init__(self,label=None):
+    def __init__(self,label=None, attributes = {}):
         self.label = label
         self.next_edge_id = 0
         self.nodes = {}
@@ -231,23 +231,25 @@ class Graph:
         self.adjacency_list = {}
         self.topo_sort = []
         self.topo_loc = {}
-        self.graph_attributes = {}
+        self.graph_attributes = attributes
         self.closure = {}
         self.dfs_list = {}
         self.sub_graphs = {}
+        self.ccs    = []
+        self.ccs_dirty = False
         #set if previous topo sort has been invalidated by adding/deleting edges
         self.topo_dirty = False
 
     def clear(self):
         self.__init__()
 
-    def set(self, name, value):
-        self.graph_attributes[name] = value
+    # def set_attribute(self, name, value):
+    #     self.graph_attributes[name] = value
+    #
+    # def get_attribute(self, name):
+    #     return self.graph_attributes.get(name)
 
-    def get(self, name):
-        return self.graph_attributes.get(name)
-
-    def attr_dict(self):
+    def attributes(self):
         return self.graph_attributes
 
     def get_label(self):
@@ -272,6 +274,8 @@ class Graph:
         leaf = g.leaves()[0]
         for o in out_arcs:
             self.add_edge(leaf,o[1],o[2])
+        self.ccs_dirty = True
+        self.topo_dirty = True
 
 
 
@@ -354,7 +358,7 @@ class Graph:
             write_graph.render(filename= name)
 
         # pure python representation
-        py_graph = {'nodes': self.node_dict(), 'edges': self.edge_dict(), 'attributes': self.attr_dict()}
+        py_graph = {'nodes': self.node_dict(), 'edges': self.edge_dict(), 'attributes': self.attributes()}
         f = open(name + '.py', 'w')
         pretty_printer = pprint.PrettyPrinter(indent=4)
         nice_str = pretty_printer.pformat(py_graph)
@@ -418,6 +422,8 @@ class Graph:
     # --Creates a new node with id node_id.  Arbitrary data can be attached
     # --to the node viea the node_data parameter.
     def add_node(self, node_id, node_data=None):
+        self.topo_dirty = True
+        self.ccs_dirty  = True
         if not node_id in [self.nodes, self.hidden_nodes]:
             self.nodes[node_id] = ([], [], node_data)
             return self.nodes[node_id][2]
@@ -438,6 +444,8 @@ class Graph:
             self.delete_edge(edge)
         # --Delete node.
         del self.nodes[node_id]
+        self.topo_dirty = True
+        self.ccs_dirty  = True
 
     def delete_nodes(self, nodes):
         for node in nodes:
@@ -457,7 +465,24 @@ class Graph:
             print('gotchya',e)
         del self.edges[edge_id]
         self.topo_dirty = True
+        self.ccs_dirty = True
 
+    def add_subgraph(self,label,nodes, attributes={}):
+        if (rem := nodes - self.nodes()):
+            raise Exception(f'Creating a subgraph with non-graph nodes {rem}')
+        self.sub_graphs[label] = (nodes,attributes)
+
+    def get_subgraph(self,label):
+        return self.sub_graphs[label][0]
+
+    def get_subgraph_attributes(self, label):
+        return self.sub_graphs[label][1]
+
+    def delete_subgraph(self,label):
+        del self.sub_graphs[label]
+
+    def induce_subgraph(self,label):
+        return self.induce(self.get_subgraph(label),label, self.get_subgraph_attributes(label))
 
     # --Adds an edge (head_id, tail_id).
     # --Arbitrary data can be attached to the edge via edge_data
@@ -481,6 +506,7 @@ class Graph:
         self.nodes[head_id][1].append(edge_id)
         self.nodes[tail_id][0].append(edge_id)
         self.topo_dirty = True
+        self.ccs_dirty = True
         return edge_id
 
 
@@ -871,15 +897,25 @@ class Graph:
                 stack.extend(next_nodes - visited)
         return visited
 
-    def connected_components(self):
-        all_nodes = set(self.nodes.keys())
-        groups = []
-        while all_nodes:
-            group = self.undirected_bfs(all_nodes.pop())
-            groups += [group]
-            all_nodes = all_nodes - group
+    def __len__(self):
+        return self.number_of_nodes()
 
-        return groups
+    def sort_connected_components(self,f):
+        self.ccs = f(self, self.ccs)
+
+    def connected_components(self):
+        if self.ccs_dirty:
+            all_nodes = set(self.nodes.keys())
+            groups = []
+            while all_nodes:
+                group = self.undirected_bfs(all_nodes.pop())
+                groups += [group]
+                all_nodes = all_nodes - group
+            self.ccs = groups
+            self.ccs_dirty = False
+            return groups
+        else:
+            return self.ccs
 
 
 
