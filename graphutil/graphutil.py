@@ -243,14 +243,14 @@ class Graph:
     def clear(self):
         self.__init__()
 
-    # def set_attribute(self, name, value):
-    #     self.graph_attributes[name] = value
-    #
-    # def get_attribute(self, name):
-    #     return self.graph_attributes.get(name)
+    def set_attribute(self, name, value):
+        self.graph_attributes[name] = value
 
-    def attributes(self):
-        return self.graph_attributes
+    def get_attribute(self, name):
+        return self.graph_attributes.get(name)
+
+    # def attributes(self):
+    #     return self.graph_attributes
 
     def get_label(self):
         return self.label
@@ -358,7 +358,7 @@ class Graph:
             write_graph.render(filename= name)
 
         # pure python representation
-        py_graph = {'nodes': self.node_dict(), 'edges': self.edge_dict(), 'attributes': self.attributes()}
+        py_graph = {'nodes': self.node_dict(), 'edges': self.edge_dict(), 'attributes': self.graph_attributes}
         f = open(name + '.py', 'w')
         pretty_printer = pprint.PrettyPrinter(indent=4)
         nice_str = pretty_printer.pformat(py_graph)
@@ -435,11 +435,11 @@ class Graph:
     # --Deletes the node and all in and out arcs.
     def delete_node(self, node_id):
         # --Remove fanin connections.
-        in_edges = self.in_arcs(node_id)
+        in_edges = copy.copy(self.in_arcs(node_id))
         for edge in in_edges:
             self.delete_edge(edge)
         # --Remove fanout connections.
-        out_edges = self.out_arcs(node_id)
+        out_edges = copy.copy(self.out_arcs(node_id))
         for edge in out_edges:
             self.delete_edge(edge)
         # --Delete node.
