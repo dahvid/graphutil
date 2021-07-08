@@ -262,8 +262,8 @@ class Graph:
     #preserves all in/out arc attributes/id's
     #TODO make this more general, less restrictions
     def substitute(self, node, g):
-        in_arcs = [(self.head(x),self.tail(x),self.edge_data(x)) for x in self.in_arcs(node)]
-        out_arcs = [(self.head(x),self.tail(x),self.edge_data(x)) for x in self.out_arcs(node)]
+        in_arcs = [(self.head(x),self.tail(x),self.edge_data(x)[2]) for x in self.in_arcs(node)]
+        out_arcs = [(self.head(x),self.tail(x),self.edge_data(x)[2]) for x in self.out_arcs(node)]
         self.delete_node(node)
         for node in g.node_list():
             self.add_node(node, g.node_data(node))
