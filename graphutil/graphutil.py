@@ -32,7 +32,9 @@ import logging
 import traceback, sys
 from collections import defaultdict
 
-
+#TODO edge_data() is a screwy concept because it returns the head and tail as well
+# I think this is unintuitive, perhaps add an edge_attributes function
+# I'm afraid I'll break a lot of stuff if I change the semantics of edge_data()
 #
 # Exceptions
 #
@@ -45,7 +47,11 @@ class Graph_topological_error(Exception):
 
 
 class Graph_dandling_edge(Exception):
-    pass
+    def __init__(self, msg, missing_nodes=[]):
+        self.missing_nodes = missing_nodes
+        super().__init__(msg)
+
+
 
 
 class Graph_duplicate_edge(Exception):
@@ -249,8 +255,8 @@ class Graph:
     def get_attribute(self, name):
         return self.graph_attributes.get(name)
 
-    # def attributes(self):
-    #     return self.graph_attributes
+    def attributes(self):
+        return self.graph_attributes
 
     def get_label(self):
         return self.label
@@ -260,7 +266,7 @@ class Graph:
     #assumes only deleted node has the same name in substituted node
     #assumes substituting graph has one root and one leaf
     #preserves all in/out arc attributes/id's
-    #TODO make this more general, less restrictions
+    #transfers subgraphs as well
     def substitute(self, node, g):
         in_arcs = [(self.head(x),self.tail(x),self.edge_data(x)[2]) for x in self.in_arcs(node)]
         out_arcs = [(self.head(x),self.tail(x),self.edge_data(x)[2]) for x in self.out_arcs(node)]
@@ -274,6 +280,10 @@ class Graph:
         leaf = g.leaves()[0]
         for o in out_arcs:
             self.add_edge(leaf,o[1],o[2])
+        #transfer any subgraphs
+        for label,(nodes,attributes) in g.sub_graphs.items():
+            self.add_subgraph(label,nodes,attributes)
+
         self.ccs_dirty = True
         self.topo_dirty = True
 
@@ -468,9 +478,12 @@ class Graph:
         self.ccs_dirty = True
 
     def add_subgraph(self,label,nodes, attributes={}):
-        if (rem := nodes - self.nodes()):
+        if (rem := set(nodes) - set(self.node_list())):
             raise Exception(f'Creating a subgraph with non-graph nodes {rem}')
         self.sub_graphs[label] = (nodes,attributes)
+
+    def subgraphs(self):
+        return self.sub_graphs
 
     def get_subgraph(self,label):
         return self.sub_graphs[label][0]
@@ -487,10 +500,10 @@ class Graph:
     # --Adds an edge (head_id, tail_id).
     # --Arbitrary data can be attached to the edge via edge_data
     def add_edge(self, head_id, tail_id, edge_data=None):
-        if (head_id not in self.nodes.keys()) or (tail_id not in self.nodes.keys()):
-            nodes_ids_str = '"' + str(head_id) + '" & "' + str(tail_id) + '"'
+        missing = [x for x in [head_id,tail_id] if not x in self.nodes]
+        if missing:
             raise Graph_dandling_edge(
-                "You can't add edge connecting " + nodes_ids_str + " before adding nodes: " + nodes_ids_str)
+                "You can't add edge " + head_id + "->" + tail_id + " missing nodes " + str(missing), missing)
 
         existing_edges = self.get_edges(head_id, tail_id)
         for edge in existing_edges:
@@ -654,8 +667,7 @@ class Graph:
 
     # --Similar to above.
     def edge_list(self):
-        el = self.edges.keys()
-        return el
+        return list(self.edges.keys())
 
 
     # --Similar to above.
@@ -1027,31 +1039,35 @@ class Graph:
                     dfs_stack.push(self.head(edge))
         return dfs_list
 
-    # --Returns a list of nodes in some BFS order for all nodes in graph
-    def bfs_full(self):
+    def dfs_full(self):
         roots = self.roots()
-        bfs_order = []
-        bfs_set   = set()
-        for root in roots:
-            bfs = self.bfs(root)
-            bfs_order += [n for n in bfs if not n in bfs_set]
-            bfs_set.union(set(bfs))
+        self.add_node('dummy')
+        for r in roots:
+            self.add_edge('dummy',r)
+        dfs_order = self.dfs('dummy')
+        self.delete_node('dummy')
         return bfs_order
 
-    # --Returns a list of nodes in some BFS order for all given roots
-    def bfs_multi(self, roots):
-        bfs_order = roots
-        bfs_set   = set(roots)
-        for root in roots:
-            bfs = self.bfs(root)
-            bfs_order += [n for n in bfs if n not in bfs_set]
-            bfs_set = bfs_set.union(set(bfs))
+
+    # --Returns a list of nodes in some BFS order from root nodes
+    def bfs_full(self):
+        roots = self.roots()
+        self.add_node('dummy')
+        for r in roots:
+            self.add_edge('dummy',r)
+        bfs_order = self.bfs('dummy')
+        self.delete_node('dummy')
         return bfs_order
 
     # --Visits all nodes from roots in BFS order, including roots
-    def bfs_multi_visit(self,roots,visitor):
-        bfs_order = self.bfs_multi(roots)
+    def bfs_full_visit(self,visitor):
+        bfs_order = self.bfs_full()
         for node in bfs_order:
+            visitor.discover_node(node)
+
+    def dfs_full_visit(self, visitor):
+        dfs_order = self.dfs_full()
+        for node in dfs_order:
             visitor.discover_node(node)
 
     # --Returns a list of nodes in some BFS order.
@@ -1105,12 +1121,22 @@ class Graph:
             if node != start_node:
                 visitor.discover_node(self, node)
 
+    # --Allows visiting nodes in any order
+    # --Edge visitor is
+    # def any_visit(self, nodes, visitor=DummyVisitor()):
+    #     for node in nodes:
+    #         node_visitor.discover_node(self, node)
+
 
     # backwards dfs visitor
     def back_bfs_visit(self, start_node, visitor):
         for node in self.back_bfs(start_node):
             if node != start_node:
                 visitor.discover_node(node)
+
+    def topo_visit(self,visitor):
+        for node in self.topological_sort():
+            visitor.discover_node(node)
 
 
     # --Returns all the root nodes of the graph
