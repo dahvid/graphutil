@@ -641,10 +641,9 @@ class Graph:
     def number_of_edges(self):
         return len(self.edges.keys())
 
-
+    #
     def node_dict(self):
         return dict([(x, self.node_data(x)) for x in self.node_list()])
-
 
     # --Return a list of the node id's of all visible nodes in the graph.
     def node_list(self):
@@ -1136,6 +1135,10 @@ class Graph:
 
     def topo_visit(self,visitor):
         for node in self.topological_sort():
+            visitor.discover_node(node)
+
+    def any_visit(self, nodes, visitor):
+        for node in nodes:
             visitor.discover_node(node)
 
 
