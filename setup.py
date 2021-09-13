@@ -6,11 +6,11 @@
 from setuptools import setup
 
 setup(name='graphutil',
-      version='1.6.3',
+      version='2.0',
       description='Graph Processing Library',
       author='David Minor',
       author_email='dahvid.minor@gmail.com',
       url='https://github.com/dahvid/graphutil',
       packages=['graphutil'],
-      python_requires='>=2.7',
+      python_requires='>=3.8',
       )
