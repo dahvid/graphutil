@@ -362,7 +362,10 @@ class Graph:
                     label = head_edge_form(self.edge_data(e)) + '->' + tail_edge_form(self.edge_data(e))
                     write_graph.edge(self.head(e), self.tail(e)
                                      , label=label)
-
+                elif head_edge_form:
+                    label = head_edge_form(self.edge_data(e))
+                    write_graph.edge(self.head(e), self.tail(e)
+                                     , label=label)
                 else:
                     write_graph.edge(self.head(e), self.tail(e), label=str(self.edge_data(e)))
             write_graph.render(filename= name)
