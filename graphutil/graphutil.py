@@ -29,8 +29,6 @@ import copy
 import time
 import pprint
 import logging
-import traceback, sys
-from collections import defaultdict
 
 #TODO edge_data() is a screwy concept because it returns the head and tail as well
 # I think this is unintuitive, perhaps add an edge_attributes function
@@ -38,23 +36,26 @@ from collections import defaultdict
 #
 # Exceptions
 #
-class Graph_duplicate_node(Exception):
+class Graph_duplicate_node(BaseException):
     pass
 
 
-class Graph_topological_error(Exception):
+class Graph_topological_error(BaseException):
     pass
 
 
-class Graph_dandling_edge(Exception):
+class Graph_dandling_edge(BaseException):
     def __init__(self, msg, missing_nodes=[]):
         self.missing_nodes = missing_nodes
         super().__init__(msg)
 
 
+class Graph_no_edge(BaseException):
+    def __init__(self, msg, missing_edges=[]):
+        self.missing_nodes = missing_edges
+        super().__init__(msg)
 
-
-class Graph_duplicate_edge(Exception):
+class Graph_duplicate_edge(BaseException):
     pass
 
 
@@ -291,30 +292,30 @@ class Graph:
 
 
     #TODO this should use a dfs for effeciency, instead of duplicating edges
-    def induce(self, tasks, label=None):
+    def induce(self, nodes, label=None):
         """
             creates an induced graph from the passed in set of tasks
             :return  graph, dangling out edges, dangling in edges
         """
         g = Graph(label)
-        for task in tasks:
-            g.add_node(task, self.node_data(task))
+        for node in nodes:
+            g.add_node(node, copy.deepcopy(self.node_data(node)))
 
         edges = set()
-        for task in tasks:
-            in_arcs = self.in_arcs_data(task)
-            out_arcs = self.out_arcs_data(task)
+        dangling_in_edges = []
+        dangling_out_edges = []
+        for node in nodes:
+            in_arcs = self.in_arcs_data(node)
+            out_arcs = self.out_arcs_data(node)
 
-            dangling_in_edges = []
-            dangling_out_edges = []
             for head,tail,data in in_arcs:
-                if head in tasks and tail in tasks:
+                if head in nodes and tail in nodes:
                     edges.add((head,tail,data))
                 else:
                     dangling_in_edges += [(head,tail,data)]
 
             for head,tail,data in out_arcs:
-                if head in tasks and tail in tasks:
+                if head in nodes and tail in nodes:
                     edges.add((head,tail,data))
                 else:
                     dangling_out_edges += [(head,tail,data)]
@@ -622,7 +623,7 @@ class Graph:
         for edge in out_edges:
             if self.tail(edge) == tail_id:
                 return edge
-        raise (Graph_no_edge, (head_id, tail_id))
+        raise (Graph_no_edge, (head_id, tail_id),'Graph is missing edge ' + str((head_id,tail_id)))
 
 
     # --Returns the edge that connects (head_id,tail_id)
@@ -806,6 +807,18 @@ class Graph:
         mapped_data = map(None, self.nodes[node_id])
         return len(mapped_data[0]) + len(mapped_data[1])
 
+    # --merges graph into this graph
+    # --overwriting any shared nodes
+    def merge(self, graph):
+        for node,data in graph.node_dict().items():
+            if node in self.node_list():
+                self.set_node_data(node,data)
+            else:
+                self.add_node(node,data)
+
+        for edge,data in graph.edge_dict().items():
+            if edge not in self.edge_dict():
+                self.add_edge(edge[0],edge[1],data[2])
 
     # location of each node in topo list
     def make_topo_node_finder(self):
@@ -865,7 +878,7 @@ class Graph:
         # --Check to see if all nodes were covered.
         if len(topological_list) != len(node_list):
             logging.warn("Graph appears to be cyclic. Topological sort is invalid!")
-            raise (Graph_topological_error, topological_list)
+            raise (Graph_topological_error(str(topological_list)))
 
         self.topo_sort = topological_list
         return topological_list
@@ -1048,7 +1061,7 @@ class Graph:
             self.add_edge('dummy',r)
         dfs_order = self.dfs('dummy')
         self.delete_node('dummy')
-        return bfs_order
+        return dfs_order
 
 
     # --Returns a list of nodes in some BFS order from root nodes
@@ -1210,7 +1223,7 @@ class Graph:
 
                 for edge_id in out_edges:
                     node_id = self.tail(edge_id)
-                    if repeat or not nodi_id in nodes_already_stacked:
+                    if repeat or not node_id in nodes_already_stacked:
                         nodes_already_stacked[node_id] = 0
                         dfs_stack.push([edge_id, False])  # False - means Children not stacked, edge not processed
 
