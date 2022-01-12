@@ -130,8 +130,7 @@ def test_bfs_full():
     g.add_edge("B", "D", "edge_data")
     bfs = g.bfs_full()
     assert len(bfs)
-    # print(bfs)
-    assert bfs == ["A","B","D","C","E","F"]
+    assert bfs == ['A', 'E', 'F', 'B', 'D', 'C']
 
 def test_substitute():
     g = Graph()
@@ -161,8 +160,7 @@ def test_multi():
     g.add_edge("A", "B", "a-b data")
     g.add_edge("B", "C", "b-c data")
     g.add_edge("A", "B", "other data")
-
-    assert g.number_of_edges("A","B") == 2
+    assert g.number_of_multi_edges("A","B") == 2
 
 
 if __name__ == "__main__":
@@ -172,3 +170,4 @@ if __name__ == "__main__":
     test_bfs()
     test_bfs_full()
     test_substitute()
+    test_multi()

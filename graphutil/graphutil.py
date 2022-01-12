@@ -645,6 +645,11 @@ class Graph:
     def number_of_edges(self):
         return len(self.edges.keys())
 
+    def number_of_multi_edges(self, src, dest):
+        edges = [e for e in self.edges.values()
+                if e[0] == src and e[1] == dest]
+        return len(edges)
+
     #
     def node_dict(self):
         return dict([(x, self.node_data(x)) for x in self.node_list()])
@@ -1072,6 +1077,7 @@ class Graph:
             self.add_edge('dummy',r)
         bfs_order = self.bfs('dummy')
         self.delete_node('dummy')
+        bfs_order.remove('dummy')
         return bfs_order
 
     # --Visits all nodes from roots in BFS order, including roots
