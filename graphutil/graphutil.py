@@ -370,7 +370,8 @@ class Graph:
                 else:
                     write_graph.edge(self.head(e), self.tail(e), label=str(self.edge_data(e)))
             write_graph.render(filename= name)
-
+        else:
+            print("Graphviz module not available, will write graph as pure Python")
         # pure python representation
         py_graph = {'nodes': self.node_dict(), 'edges': self.edge_dict(), 'attributes': self.graph_attributes}
         f = open(name + '.py', 'w')
