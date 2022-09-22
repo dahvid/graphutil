@@ -301,7 +301,7 @@ class Graph:
         for node in nodes:
             g.add_node(node, copy.deepcopy(self.node_data(node)))
 
-        edges = set()
+        edges = {}
         dangling_in_edges = []
         dangling_out_edges = []
         for node in nodes:
@@ -310,16 +310,16 @@ class Graph:
 
             for head,tail,data in in_arcs:
                 if head in nodes and tail in nodes:
-                    edges.add((head,tail,data))
+                    edges[(head,tail)] = data
                 else:
                     dangling_in_edges += [(head,tail,data)]
 
             for head,tail,data in out_arcs:
                 if head in nodes and tail in nodes:
-                    edges.add((head,tail,data))
+                    edges[(head,tail)] = data
                 else:
                     dangling_out_edges += [(head,tail,data)]
-        for head,tail,data in edges:
+        for (head,tail),data in edges.items():
                 g.add_edge(head,tail,data)
         return (g, dangling_in_edges, dangling_out_edges)
 
@@ -372,12 +372,12 @@ class Graph:
             write_graph.render(filename= name)
         else:
             print("Graphviz module not available, will write graph as pure Python")
-        # pure python representation
-        py_graph = {'nodes': self.node_dict(), 'edges': self.edge_dict(), 'attributes': self.graph_attributes}
-        f = open(name + '.py', 'w')
-        pretty_printer = pprint.PrettyPrinter(indent=4)
-        nice_str = pretty_printer.pformat(py_graph)
-        f.write('Graph = ' + nice_str + '\n')
+            # pure python representation
+            py_graph = {'nodes': self.node_dict(), 'edges': self.edge_dict(), 'attributes': self.graph_attributes}
+            f = open(name + '.py', 'w')
+            pretty_printer = pprint.PrettyPrinter(indent=4)
+            nice_str = pretty_printer.pformat(py_graph)
+            f.write('Graph = ' + nice_str + '\n')
 
 
     # pure Warshals algorithm, but adapted to existing data structures
