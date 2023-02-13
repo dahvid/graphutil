@@ -30,6 +30,7 @@ import time
 import pprint
 import logging
 
+
 #TODO edge_data() is a screwy concept because it returns the head and tail as well
 # I think this is unintuitive, perhaps add an edge_attributes function
 # I'm afraid I'll break a lot of stuff if I change the semantics of edge_data()
@@ -426,11 +427,14 @@ class Graph:
         for G_node in G_node_list:
             self.add_node(G_node, G.node_data(G_node))
         # --Copy edges.
-        for G_node in G_node_list:
-            out_edges = G.out_arcs(G_node)
-        for edge in out_edges:
-            tail_id = G.tail(edge)
-            self.add_edge(G_node, tail_id, G.edge_data(edge))
+        for G_edge in G.edge_data_list():
+            self.add_edge(G_edge[0],G_edge[1],G_edge[2])
+
+        # for G_node in G_node_list:
+        #     out_edges = G.out_arcs(G_node)
+        # for edge in out_edges:
+        #     tail_id = G.tail(edge)
+        #     self.add_edge(G_node, tail_id, G.edge_data(edge))
         self.adjacency_list = G.adjacency_list
 
 
