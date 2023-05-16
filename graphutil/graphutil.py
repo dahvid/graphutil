@@ -440,15 +440,17 @@ class Graph:
 
     # --Creates a new node with id node_id.  Arbitrary data can be attached
     # --to the node viea the node_data parameter.
-    def add_node(self, node_id, node_data=None):
+    def add_node(self, node_id, node_data=None, no_except=False):
         self.topo_dirty = True
         self.ccs_dirty  = True
-        if not node_id in [self.nodes, self.hidden_nodes]:
+        if not node_id in list(self.nodes.keys()) + list(self.hidden_nodes.keys()):
             self.nodes[node_id] = ([], [], node_data)
             return self.nodes[node_id][2]
         else:
-            # print "WARNING: Duplicate node id's.  Latest node id was ignored."
-            raise (Graph_duplicate_node, node_id)
+            if no_except:
+                return False
+            else:
+                raise (Graph_duplicate_node, node_id)
 
 
     # --Deletes the node and all in and out arcs.
@@ -508,7 +510,7 @@ class Graph:
 
     # --Adds an edge (head_id, tail_id).
     # --Arbitrary data can be attached to the edge via edge_data
-    def add_edge(self, head_id, tail_id, edge_data=None):
+    def add_edge(self, head_id, tail_id, edge_data=None, no_except=False):
         missing = [x for x in [head_id,tail_id] if not x in self.nodes]
         if missing:
             raise Graph_dandling_edge(
@@ -516,11 +518,14 @@ class Graph:
 
         existing_edges = self.get_edges(head_id, tail_id)
         for edge in existing_edges:
-            if self.edge_data(edge) == edge_data: #duplicate edge
-                raise Graph_duplicate_edge(
-                    "You can't add identical edge from " + head_id + " to " + tail_id
-                    + " with identical data " + edge_data
-                )
+            if self.edge_data(edge) == (head_id,tail_id,edge_data): #duplicate edge
+                if no_except:
+                    return False
+                else:
+                    raise Graph_duplicate_edge(
+                        "You can't add identical edge from " + head_id + " to " + tail_id
+                        + " with identical data " + str(edge_data)
+                    )
 
         edge_id = self.next_edge_id
         self.next_edge_id = self.next_edge_id + 1
@@ -1095,6 +1100,13 @@ class Graph:
         dfs_order = self.dfs_full()
         for node in dfs_order:
             visitor.discover_node(node)
+
+    def recursive_dfs(self, start, visitor):
+        #visitor may alter graph
+        visitor(self,start)
+        outs = self.out_adjacent(start)
+        for o in outs:
+            self.recursive_dfs(o,visitor)
 
     # --Returns a list of nodes in some BFS order.
     def bfs(self, source_id):
