@@ -1,6 +1,3 @@
-## @package graph_lib
-#  Copyright (c) General Electric Company, 2017. All rights reserved.
-#
 
 
 # --Version 1.0.0
@@ -38,7 +35,9 @@ import logging
 # Exceptions
 #
 class Graph_duplicate_node(BaseException):
-    pass
+    def __init__(self,id=None):
+        self.node_id = id
+
 
 
 class Graph_topological_error(BaseException):
@@ -429,14 +428,7 @@ class Graph:
         # --Copy edges.
         for G_edge in G.edge_data_list():
             self.add_edge(G_edge[0],G_edge[1],G_edge[2])
-
-        # for G_node in G_node_list:
-        #     out_edges = G.out_arcs(G_node)
-        # for edge in out_edges:
-        #     tail_id = G.tail(edge)
-        #     self.add_edge(G_node, tail_id, G.edge_data(edge))
         self.adjacency_list = G.adjacency_list
-
 
     # --Creates a new node with id node_id.  Arbitrary data can be attached
     # --to the node viea the node_data parameter.
@@ -450,7 +442,16 @@ class Graph:
             if no_except:
                 return False
             else:
-                raise (Graph_duplicate_node, node_id)
+                raise Graph_duplicate_node(node_id)
+
+    #returns list of edges in topological order
+    def topo_edges(self):
+        ts = self.topological_sort()
+        edges = []
+        for n in ts:
+            edges += self.out_arcs(n)
+        return edges
+
 
 
     # --Deletes the node and all in and out arcs.
@@ -472,6 +473,14 @@ class Graph:
         for node in nodes:
             self.delete_node(node)
 
+    def delete_node_edges(self, src, dest):
+        edges = self.get_edges(src,dest)
+        for e in edges:
+            self.delete_edge(e)
+
+    def delete_edges(self, edge_list):
+        for e in edge_list:
+            self.delete_edge(e)
 
     # --Deletes the edge.
     def delete_edge(self, edge_id):
@@ -1076,6 +1085,7 @@ class Graph:
             self.add_edge('dummy',r)
         dfs_order = self.dfs('dummy')
         self.delete_node('dummy')
+        dfs_order.remove('dummy')
         return dfs_order
 
 
