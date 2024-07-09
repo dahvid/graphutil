@@ -162,12 +162,37 @@ def test_multi():
     g.add_edge("A", "B", "other data")
     assert g.number_of_multi_edges("A","B") == 2
 
+def test_subgraphs():
+    g = Graph()
+
+    g.add_node("A",'a')
+    g.add_node("B",'b')
+    g.add_node("C",'c')
+
+    g.add_edge("A", "B", "a-b data")
+    g.add_edge("B", "C", "b-c data")
+
+    g.add_subgraph('test',['B','C'])
+
+    sg,_,_ = g.induce_subgraph('test')
+    assert(sg.node_data('B') == 'b')
+    assert(sg.node_data('C') == 'c')
+    edges = sg.get_edges('B','C')
+    assert(len(edges) == 1)
+    assert(sg.get_edge_attributes(edges[0]) == 'b-c data')
+    sg.set_node_data("B",'new data')
+    assert(g.node_data('B') == 'b' and sg.node_data('B') == 'new data')
+    # print(f'subgraph edge = {sg.edge_list()}')
+
+
+
 
 if __name__ == "__main__":
-    test_arcs()
-    test_write()
-    test_connected_components()
-    test_bfs()
-    test_bfs_full()
-    test_substitute()
-    test_multi()
+    # test_arcs()
+    # test_write()
+    # test_connected_components()
+    # test_bfs()
+    # test_bfs_full()
+    # test_substitute()
+    # test_multi()
+    test_subgraphs()
