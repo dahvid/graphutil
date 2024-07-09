@@ -16,6 +16,9 @@
 # --David Minor April 9, 2018  -from here on check git hub
 # --https://github.com/dahvid/graphutil.git
 
+#this breaks subgraphs from version 2
+version = '3.0.0'
+
 has_graphviz = True
 try:
     import graphviz as pgv
@@ -253,6 +256,11 @@ class Graph:
     def set_attribute(self, name, value):
         self.graph_attributes[name] = value
 
+    def add_attributes(self, key_values):
+        for k,v in key_values.items():
+            self.graph_attributes[k] = v
+
+
     def get_attribute(self, name):
         return self.graph_attributes.get(name)
 
@@ -292,7 +300,7 @@ class Graph:
 
 
     #TODO this should use a dfs for effeciency, instead of duplicating edges
-    def induce(self, nodes, label=None):
+    def induce(self, nodes, label=None, attributes=None):
         """
             creates an induced graph from the passed in set of tasks
             :return  graph, dangling out edges, dangling in edges
@@ -321,6 +329,8 @@ class Graph:
                     dangling_out_edges += [(head,tail,data)]
         for (head,tail),data in edges.items():
                 g.add_edge(head,tail,data)
+        if attributes:
+            g.add_attributes(attributes)
         return (g, dangling_in_edges, dangling_out_edges)
 
 
@@ -655,6 +665,9 @@ class Graph:
         return edges
 
 
+    def get_edge_attributes(self,edge_id):
+        d = self.edge_data(edge_id)
+        return d[2]
     # print "WARNING: No edge to return."
 
     def number_of_nodes(self):
@@ -740,6 +753,21 @@ class Graph:
     def edge_data(self, edge_id):
         return self.edges[edge_id]
 
+    def is_linear(self):
+        return not self.has_splits() and not self.has_joins()
+
+    # --Returns true if graph has any splits
+    def has_splits(self):
+        for n in self.node_list():
+            if len(self.out_arcs(n)) > 1:
+                return True
+        return False
+
+    def has_joins(self):
+        for n in self.node_list():
+            if len(self.in_arcs(n)) > 1:
+                return True
+        return False
 
     # --Returns a reference to the head of the edge.  (A reference to the head id)
     def head(self, edge):
@@ -833,7 +861,7 @@ class Graph:
 
     # --merges graph into this graph
     # --overwriting any shared nodes
-    def merge(self, graph):
+    def merge(self, graph, remove_old_edges=False):
         for node,data in graph.node_dict().items():
             if node in self.node_list():
                 self.set_node_data(node,data)
@@ -843,6 +871,13 @@ class Graph:
         for edge,data in graph.edge_dict().items():
             if edge not in self.edge_dict():
                 self.add_edge(edge[0],edge[1],data[2])
+        if remove_old_edges:
+            for edge, data in self.edge_dict().items():
+                if edge[0] in graph.node_list() and (edge[1] in graph.node_list()):
+                    if edge not in graph.edge_dict():
+                        edges = self.get_edges(edge[0],edge[1])
+                        for e in edges:
+                            self.delete_edge(e)
 
     # location of each node in topo list
     def make_topo_node_finder(self):
@@ -1004,6 +1039,25 @@ class Graph:
                     nodes_already_stacked[self.tail(edge)] = 0
                     dfs_stack.push(self.tail(edge))
         return dfs_list
+    """
+    Combindes dfs with topo, will do dfs but insure topo order followed
+    """
+    def dfs_topo_sort(self):
+        visited = { n : False for n in self.node_list()}
+        result = []
+        def DFS(node):
+            if visited[node]:
+                return
+            visited[node] = True
+            for adj in self.out_adjacent(node):
+                DFS(adj)
+            result.append(node)
+
+        for i in self.topological_sort():
+            DFS(i)
+
+        result.reverse()
+        return result
 
 
     class Counter:
@@ -1286,3 +1340,4 @@ class Graph:
         sorted_components = robust_topological_sort(graph)
         # print 'robust topo sort', sorted_components
         return sorted_components
+
